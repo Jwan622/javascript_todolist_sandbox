@@ -1,0 +1,76 @@
+<div class="lists">
+  <h1>Your Todo Lists</h1>
+  <div class="incomplete-list">
+    <p>This is the incomplete list</p>
+    <% @incomplete_list.items.each do |item| %>
+    <div class="incomplete-item">
+      <%= form_for :item, url: item_path(item), method: :post, html: { class: "item-box" } do |f|%>
+        <%= f.label item.title %>
+        <%= f.check_box item.id %>
+      <% end %>
+    </div>
+    <% end %>
+  </div>
+
+  <div class="complete-list">
+    <p>This is the completed list</p>
+    <% @complete_list.items.each do |item| %>
+    <div class="complete-item">
+      <%= form_for :item, url: item_path(item), method: :post, html: { class: "item-box" } do |f|%>
+        <%= f.label item.title %>
+        <%= f.check_box item.id, { checked: true } %>
+      <% end %>
+    </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+  $(document).ready(function() {
+    var sortLists = function() {
+      var completeItems = $(".complete-item")
+      var incompleteItems = $(".incomplete-item")
+      completeItems.sort(function(a,b) {
+        return $(a).find("form label").text() - $(b).find("form label").text()
+      });
+      console.log(completeItems)
+      debugger;
+    }
+
+    var changeDom = function(itemRow) {
+      var parentList = itemRow.parent()
+      itemRow.remove()
+      // I am so dumb, you can't remove an itemRow first and then ask for its parent. You dumb dumb. It's [] if you
+      // ask for the parent after you remove it. So you need to set it first with var parent =
+      if (parentList.attr("class") === "incomplete-list") {
+        itemRow.removeClass("incomplete-item").addClass("complete-item")
+        $(".complete-list").append(itemRow)
+      }
+      else {
+        itemRow.removeClass("complete-item").addClass("incomplete-item")
+        $(".incomplete-list").append(itemRow)
+      }
+      sortLists();
+    }
+
+
+
+    var itemLists = $(".lists")
+    itemLists.on("change", ":checkbox", function(box){
+      /* now change is bound to the itemLists. Change will get fired on the actual checkbox but then
+      that event will bubble up to the itemList div. Then...because you actually have a change event bound to the itemList,
+      your function gets run as many times as you want. Regardless of where the checkbox is in the itemList, the itemList is always
+      changing, and your change callback will always get fired. Look up delegated events, it applys to any event. Bind even to some element to some
+      element that will never change... that's the point here.*/
+      var box = $(this)
+      var item_number = parseInt(box[0].name.match(/[^[\]]+(?=])/g)[0])
+      $.ajax( { type: "PUT",
+          url: "items/" + item_number,
+          data: { id: item_number },
+          success: function(text) {
+            changeDom($(box[0].closest("div")))
+          }
+        });
+      })
+    })
+</script>
